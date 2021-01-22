@@ -4,9 +4,11 @@ import Archimate as Archi
 import Browser
 import File exposing (File)
 import File.Select as Select
-import Html exposing (Html, button, div, p, text)
+import Html exposing (Html, button, div, h2, h3, p, text)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Task
+import Xml.Decode
 
 
 main =
@@ -14,8 +16,9 @@ main =
 
 
 type alias Model =
-    { archi : Maybe Archi.ArchimateModel
+    { archi : Maybe Archi.Model
     , contents : Maybe String
+    , notice : Maybe String
     }
 
 
@@ -27,7 +30,7 @@ type Msg
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Model Nothing Nothing, Cmd.none )
+    ( Model Nothing Nothing Nothing, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -44,9 +47,16 @@ update msg model =
             )
 
         ModelLoaded contents ->
-            ( { model | contents = Just contents }
-            , Cmd.none
-            )
+            case Xml.Decode.run Archi.decoder contents of
+                Ok a ->
+                    ( { model | contents = Just contents, archi = Just a }
+                    , Cmd.none
+                    )
+
+                Err s ->
+                    ( { model | contents = Just contents, archi = Nothing }
+                    , Cmd.none
+                    )
 
 
 subscriptions _ =
@@ -56,11 +66,38 @@ subscriptions _ =
 view : Model -> Html Msg
 view model =
     div []
-        [ button [ onClick ModelRequested ] [ text "Load Model" ]
+        [ case model.notice of
+            Nothing ->
+                text " "
+
+            Just s ->
+                p [ class "notice" ] [ text s ]
+        , button [ onClick ModelRequested ] [ text "Load Model" ]
+        , case model.archi of
+            Nothing ->
+                p [] [ text "No model decoded" ]
+
+            Just a ->
+                viewArchimateModel a
         , case model.contents of
             Nothing ->
-                p [] [ text "No model loaded" ]
+                p [] [ text "No model loaded. Please upload your Archimate Exchange file" ]
 
             Just s ->
                 p [] [ text s ]
+        ]
+
+
+viewArchimateModel : Archi.Model -> Html Msg
+viewArchimateModel model =
+    div []
+        [ h2 [] [ text model.name ]
+        , h3 [] [ text "Documentation" ]
+        , p []
+            [ if String.isEmpty model.documentation then
+                text "(Undocumented)"
+
+              else
+                text model.documentation
+            ]
         ]
