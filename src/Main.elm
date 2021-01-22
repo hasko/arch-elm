@@ -87,7 +87,7 @@ view model =
                     p [] [ text "No model loaded. Please upload your Archimate Exchange file" ]
 
                 Just s ->
-                    pre [] [ text s ]
+                    pre [ class "smaller" ] [ text s ]
             ]
         ]
 
@@ -97,6 +97,7 @@ viewArchimateModel model =
     div []
         [ div []
             [ h2 [] [ text model.name ]
+            , div [] (h3 [] [ text "Observations" ] :: observations model)
             , h3 [] [ text "Documentation" ]
             , p []
                 [ if String.isEmpty model.documentation then
@@ -116,7 +117,7 @@ viewArchimateModel model =
                         , th [ class "lighter" ] [ text "ID" ]
                         ]
                     ]
-                , tbody [] (List.map viewElement model.elements)
+                , tbody [] (List.map viewElement (List.sortBy (\e -> e.name) model.elements))
                 ]
             ]
         , div []
@@ -176,3 +177,15 @@ viewRelationship model r =
             ]
         , td [ class "lighter" ] [ text r.identifier ]
         ]
+
+
+observations : Archi.Model -> List (Html Msg)
+observations model =
+    []
+        |> List.append
+            (if Archi.hasAnyExternalElements model Archi.Application then
+                []
+
+             else
+                [ p [] [ text "The model has no external elements on the Application layer." ] ]
+            )

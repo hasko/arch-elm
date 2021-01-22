@@ -11,3 +11,7 @@ td, th {
 .lighter {
   color: gray;
 }
+
+.smaller {
+  font-size: .8rem;
+}
