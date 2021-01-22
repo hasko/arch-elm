@@ -4,7 +4,7 @@ import Archimate as Archi
 import Browser
 import File exposing (File)
 import File.Select as Select
-import Html exposing (Html, button, div, h2, h3, p, text)
+import Html exposing (Html, button, div, h2, h3, p, pre, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Task
@@ -79,12 +79,13 @@ view model =
 
             Just a ->
                 viewArchimateModel a
+        , h3 [] [ text "Raw data" ]
         , case model.contents of
             Nothing ->
                 p [] [ text "No model loaded. Please upload your Archimate Exchange file" ]
 
             Just s ->
-                p [] [ text s ]
+                pre [] [ text s ]
         ]
 
 
