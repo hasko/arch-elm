@@ -4,7 +4,7 @@ import Archimate as Archi
 import Browser
 import File exposing (File)
 import File.Select as Select
-import Html exposing (Html, button, div, h2, h3, p, pre, text)
+import Html exposing (Html, button, div, h2, h3, p, pre, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Task
@@ -49,12 +49,12 @@ update msg model =
         ModelLoaded contents ->
             case Xml.Decode.run Archi.decoder contents of
                 Ok a ->
-                    ( { model | contents = Just contents, archi = Just a }
+                    ( { model | contents = Just contents, archi = Just a, notice = Nothing }
                     , Cmd.none
                     )
 
                 Err s ->
-                    ( { model | contents = Just contents, archi = Nothing }
+                    ( { model | contents = Just contents, archi = Nothing, notice = Just s }
                     , Cmd.none
                     )
 
@@ -101,4 +101,14 @@ viewArchimateModel model =
               else
                 text model.documentation
             ]
+        , h3 [] [ text "Elements" ]
+        , table []
+            [ thead [] [ tr [] [ th [] [ text "Name" ], th [] [ text "Type" ], th [] [ text "ID" ] ] ]
+            , tbody [] (List.map viewElement model.elements)
+            ]
         ]
+
+
+viewElement : Archi.Element -> Html Msg
+viewElement e =
+    tr [] [ td [] [ text e.name ], td [] [ text e.type_ ], td [] [ text e.identifier ] ]
