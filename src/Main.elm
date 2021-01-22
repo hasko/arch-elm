@@ -106,9 +106,35 @@ viewArchimateModel model =
             [ thead [] [ tr [] [ th [] [ text "Name" ], th [] [ text "Type" ], th [] [ text "ID" ] ] ]
             , tbody [] (List.map viewElement model.elements)
             ]
+        , h3 [] [ text "Relationships" ]
+        , table []
+            [ thead []
+                [ tr []
+                    [ th [] [ text "Source" ]
+                    , th [] [ text "Target" ]
+                    , th [] [ text "Type" ]
+                    , th [] [ text "ID" ]
+                    ]
+                ]
+            , tbody [] (List.map viewRelationship model.relationships)
+            ]
         ]
 
 
 viewElement : Archi.Element -> Html Msg
 viewElement e =
-    tr [] [ td [] [ text e.name ], td [] [ text e.type_ ], td [] [ text e.identifier ] ]
+    tr []
+        [ td [] [ text e.name ]
+        , td [] [ text e.type_ ]
+        , td [] [ text e.identifier ]
+        ]
+
+
+viewRelationship : Archi.Relationship -> Html Msg
+viewRelationship r =
+    tr []
+        [ td [] [ text r.source ]
+        , td [] [ text r.target ]
+        , td [] [ text r.type_ ]
+        , td [] [ text r.identifier ]
+        ]
