@@ -5,5 +5,9 @@ table {
 
 td, th {
   border: 1px solid #ccc;
-  padding: 0.5em;
+  padding: 0.2rem 0.5rem 0.2rem 0.5rem;
+}
+
+.lighter {
+  color: gray;
 }

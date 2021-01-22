@@ -1,4 +1,4 @@
-module Archimate exposing (Element, Model, Relationship, decoder)
+module Archimate exposing (Element, Model, Relationship, decoder, element, rel)
 
 import Xml.Decode as D exposing (Decoder)
 
@@ -16,7 +16,7 @@ type alias Element =
 
 
 type alias Relationship =
-    { identifier : String, source : String, target : String, type_ : String, name : String }
+    { identifier : String, source : String, target : String, type_ : String, name : Maybe String }
 
 
 decoder : Decoder Model
@@ -43,4 +43,18 @@ relationshipDecoder =
         (D.stringAttr "source")
         (D.stringAttr "target")
         (D.stringAttr "xsi:type")
-        (D.path [ "name" ] (D.single D.string))
+        (D.maybe (D.path [ "name" ] (D.single D.string)))
+
+
+element : Model -> String -> Maybe Element
+element model id_ =
+    model.elements
+        |> List.filter (\e -> e.identifier == id_)
+        |> List.head
+
+
+rel : Model -> String -> Maybe Relationship
+rel model id_ =
+    model.relationships
+        |> List.filter (\e -> e.identifier == id_)
+        |> List.head

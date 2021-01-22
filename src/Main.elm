@@ -4,8 +4,9 @@ import Archimate as Archi
 import Browser
 import File exposing (File)
 import File.Select as Select
-import Html exposing (Html, button, div, h2, h3, p, pre, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, button, div, em, h2, h3, p, pre, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class)
+import Html.Entity exposing (nbsp)
 import Html.Events exposing (onClick)
 import Task
 import Xml.Decode
@@ -65,10 +66,10 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view model =
-    div []
+    div [ class "container" ]
         [ case model.notice of
             Nothing ->
-                text " "
+                text nbsp
 
             Just s ->
                 p [ class "notice" ] [ text s ]
@@ -79,44 +80,59 @@ view model =
 
             Just a ->
                 viewArchimateModel a
-        , h3 [] [ text "Raw data" ]
-        , case model.contents of
-            Nothing ->
-                p [] [ text "No model loaded. Please upload your Archimate Exchange file" ]
+        , div []
+            [ h3 [] [ text "Raw data" ]
+            , case model.contents of
+                Nothing ->
+                    p [] [ text "No model loaded. Please upload your Archimate Exchange file" ]
 
-            Just s ->
-                pre [] [ text s ]
+                Just s ->
+                    pre [] [ text s ]
+            ]
         ]
 
 
 viewArchimateModel : Archi.Model -> Html Msg
 viewArchimateModel model =
     div []
-        [ h2 [] [ text model.name ]
-        , h3 [] [ text "Documentation" ]
-        , p []
-            [ if String.isEmpty model.documentation then
-                text "(Undocumented)"
+        [ div []
+            [ h2 [] [ text model.name ]
+            , h3 [] [ text "Documentation" ]
+            , p []
+                [ if String.isEmpty model.documentation then
+                    text "(Undocumented)"
 
-              else
-                text model.documentation
-            ]
-        , h3 [] [ text "Elements" ]
-        , table []
-            [ thead [] [ tr [] [ th [] [ text "Name" ], th [] [ text "Type" ], th [] [ text "ID" ] ] ]
-            , tbody [] (List.map viewElement model.elements)
-            ]
-        , h3 [] [ text "Relationships" ]
-        , table []
-            [ thead []
-                [ tr []
-                    [ th [] [ text "Source" ]
-                    , th [] [ text "Target" ]
-                    , th [] [ text "Type" ]
-                    , th [] [ text "ID" ]
-                    ]
+                  else
+                    text model.documentation
                 ]
-            , tbody [] (List.map viewRelationship model.relationships)
+            ]
+        , div []
+            [ h3 [] [ text "Elements" ]
+            , table []
+                [ thead []
+                    [ tr []
+                        [ th [] [ text "Name" ]
+                        , th [] [ text "Type" ]
+                        , th [ class "lighter" ] [ text "ID" ]
+                        ]
+                    ]
+                , tbody [] (List.map viewElement model.elements)
+                ]
+            ]
+        , div []
+            [ h3 [] [ text "Relationships" ]
+            , table []
+                [ thead []
+                    [ tr []
+                        [ th [] [ text "Source" ]
+                        , th [] [ text "Target" ]
+                        , th [] [ text "Type" ]
+                        , th [] [ text "Name" ]
+                        , th [ class "lighter" ] [ text "ID" ]
+                        ]
+                    ]
+                , tbody [] (List.map (viewRelationship model) model.relationships)
+                ]
             ]
         ]
 
@@ -126,15 +142,37 @@ viewElement e =
     tr []
         [ td [] [ text e.name ]
         , td [] [ text e.type_ ]
-        , td [] [ text e.identifier ]
+        , td [ class "lighter" ] [ text e.identifier ]
         ]
 
 
-viewRelationship : Archi.Relationship -> Html Msg
-viewRelationship r =
+viewRelationship : Archi.Model -> Archi.Relationship -> Html Msg
+viewRelationship model r =
     tr []
-        [ td [] [ text r.source ]
-        , td [] [ text r.target ]
+        [ td []
+            [ case Archi.element model r.source of
+                Nothing ->
+                    em [] [ text r.source ]
+
+                Just e ->
+                    text e.name
+            ]
+        , td []
+            [ case Archi.element model r.target of
+                Nothing ->
+                    em [] [ text r.target ]
+
+                Just e ->
+                    text e.name
+            ]
         , td [] [ text r.type_ ]
-        , td [] [ text r.identifier ]
+        , td []
+            [ case r.name of
+                Nothing ->
+                    text nbsp
+
+                Just s ->
+                    text s
+            ]
+        , td [ class "lighter" ] [ text r.identifier ]
         ]
