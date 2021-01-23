@@ -14,6 +14,15 @@
       <div id="main"></div>
     </main>
     <script src="main.js"></script>
-    <script>var app = Elm.Main.init({ node: document.getElementById("main") })</script>
+    <script>
+      var storedState = localStorage.getItem('archi-model');
+      var startingState = storedState ? JSON.parse(storedState) : null;
+      var app = Elm.Main.init({ node: document.getElementById("main"), flags: startingState });
+      app.ports.storeModel.subscribe(function(model) {
+        if (model.length > 0) {
+          localStorage.setItem("archi-model", model);
+        }
+      });
+    </script>
   </body>
 </html>

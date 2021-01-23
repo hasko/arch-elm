@@ -8,6 +8,7 @@ import Html exposing (Html, button, div, em, h2, h3, p, pre, table, tbody, td, t
 import Html.Attributes exposing (class)
 import Html.Entity exposing (nbsp)
 import Html.Events exposing (onClick)
+import Json.Decode as JD
 import Json.Encode as JE
 import Ports
 import Task
@@ -20,7 +21,6 @@ main =
 
 type alias Model =
     { archi : Maybe Archi.Model
-    , contents : Maybe String
     , notice : Maybe String
     }
 
@@ -31,9 +31,19 @@ type Msg
     | ModelLoaded String
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( Model Nothing Nothing Nothing, Cmd.none )
+init : Maybe JD.Value -> ( Model, Cmd Msg )
+init flags =
+    case flags of
+        Nothing ->
+            ( Model Nothing Nothing, Cmd.none )
+
+        Just jsonValue ->
+            case JD.decodeValue Archi.jsonDecoder jsonValue of
+                Ok m ->
+                    ( Model (Just m) (Just "Previous model loaded."), Cmd.none )
+
+                Err s ->
+                    ( Model Nothing (Just (JD.errorToString s)), Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -52,12 +62,12 @@ update msg model =
         ModelLoaded contents ->
             case Xml.Decode.run Archi.decoder contents of
                 Ok a ->
-                    ( { model | contents = Just contents, archi = Just a, notice = Nothing }
+                    ( { model | archi = Just a, notice = Nothing }
                     , saveModel a
                     )
 
                 Err s ->
-                    ( { model | contents = Just contents, archi = Nothing, notice = Just s }
+                    ( { model | archi = Nothing, notice = Just s }
                     , Cmd.none
                     )
 
@@ -82,15 +92,6 @@ view model =
 
             Just a ->
                 viewArchimateModel a
-        , div []
-            [ h3 [] [ text "Raw data" ]
-            , case model.contents of
-                Nothing ->
-                    p [] [ text "No model loaded. Please upload your Archimate Exchange file" ]
-
-                Just s ->
-                    pre [ class "smaller" ] [ text s ]
-            ]
         ]
 
 

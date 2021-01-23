@@ -7,11 +7,13 @@ module Archimate exposing
     , decoder
     , elementById
     , hasAnyExternalElements
+    , jsonDecoder
     , jsonEncode
     , relationshipById
     )
 
 import Dict exposing (Dict)
+import Json.Decode as JD
 import Json.Encode as JE
 import Maybe
 import Xml.Decode as D exposing (Decoder)
@@ -182,3 +184,30 @@ jsonEncodeRelationship rel =
                     [ ( "name", JE.string name ) ]
             )
         |> JE.object
+
+
+jsonDecoder : JD.Decoder Model
+jsonDecoder =
+    JD.map4 Model
+        (JD.field "name" JD.string)
+        (JD.field "doc" JD.string)
+        (JD.field "elements" (JD.list jsonElementDecoder))
+        (JD.field "rels" (JD.list jsonRelationshipDecoder))
+
+
+jsonElementDecoder : JD.Decoder Element
+jsonElementDecoder =
+    JD.map3 Element
+        (JD.field "id" JD.string)
+        (JD.field "type" JD.string)
+        (JD.field "name" JD.string)
+
+
+jsonRelationshipDecoder : JD.Decoder Relationship
+jsonRelationshipDecoder =
+    JD.map5 Relationship
+        (JD.field "id" JD.string)
+        (JD.field "source" JD.string)
+        (JD.field "target" JD.string)
+        (JD.field "type" JD.string)
+        (JD.maybe (JD.field "name" JD.string))
