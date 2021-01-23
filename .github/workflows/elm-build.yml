@@ -28,6 +28,6 @@ jobs:
           ftp_username: ${{ secrets.ftp_user }}
           ftp_password: ${{ secrets.ftp_pw }}
           local_source_dir: "./deploy"
-          dist_target_dir: "/heinecke.com/archi"
+          dist_target_dir: "/heinecke.com/arch-elm"
           only_newer: true
           delete: true
