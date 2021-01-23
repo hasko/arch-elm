@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Archimate as Archi
+import Archimate as Archi exposing (jsonEncode)
 import Browser
 import File exposing (File)
 import File.Select as Select
@@ -8,6 +8,8 @@ import Html exposing (Html, button, div, em, h2, h3, p, pre, table, tbody, td, t
 import Html.Attributes exposing (class)
 import Html.Entity exposing (nbsp)
 import Html.Events exposing (onClick)
+import Json.Encode as JE
+import Ports
 import Task
 import Xml.Decode
 
@@ -51,7 +53,7 @@ update msg model =
             case Xml.Decode.run Archi.decoder contents of
                 Ok a ->
                     ( { model | contents = Just contents, archi = Just a, notice = Nothing }
-                    , Cmd.none
+                    , saveModel a
                     )
 
                 Err s ->
@@ -151,7 +153,7 @@ viewRelationship : Archi.Model -> Archi.Relationship -> Html Msg
 viewRelationship model r =
     tr []
         [ td []
-            [ case Archi.element model r.source of
+            [ case Archi.elementById model r.source of
                 Nothing ->
                     em [] [ text r.source ]
 
@@ -159,7 +161,7 @@ viewRelationship model r =
                     text e.name
             ]
         , td []
-            [ case Archi.element model r.target of
+            [ case Archi.elementById model r.target of
                 Nothing ->
                     em [] [ text r.target ]
 
@@ -189,3 +191,10 @@ observations model =
              else
                 [ p [] [ text "The model has no external elements on the Application layer." ] ]
             )
+
+
+saveModel : Archi.Model -> Cmd Msg
+saveModel model =
+    Archi.jsonEncode model
+        |> JE.encode 0
+        |> Ports.storeModel

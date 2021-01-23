@@ -1,6 +1,18 @@
-module Archimate exposing (Aspect, Element, Layer(..), Model, Relationship, decoder, element, hasAnyExternalElements, rel)
+module Archimate exposing
+    ( Aspect
+    , Element
+    , Layer(..)
+    , Model
+    , Relationship
+    , decoder
+    , elementById
+    , hasAnyExternalElements
+    , jsonEncode
+    , relationshipById
+    )
 
 import Dict exposing (Dict)
+import Json.Encode as JE
 import Maybe
 import Xml.Decode as D exposing (Decoder)
 
@@ -48,17 +60,17 @@ relationshipDecoder =
         (D.maybe (D.path [ "name" ] (D.single D.string)))
 
 
-element : Model -> String -> Maybe Element
-element model id_ =
+elementById : Model -> String -> Maybe Element
+elementById model id_ =
     model.elements
         |> List.filter (\e -> e.identifier == id_)
         |> List.head
 
 
-rel : Model -> String -> Maybe Relationship
-rel model id_ =
+relationshipById : Model -> String -> Maybe Relationship
+relationshipById model id_ =
     model.relationships
-        |> List.filter (\e -> e.identifier == id_)
+        |> List.filter (\r -> r.identifier == id_)
         |> List.head
 
 
@@ -133,3 +145,40 @@ hasAnyExternalElements model desiredLayer =
                                 False
                        )
             )
+
+
+jsonEncode : Model -> JE.Value
+jsonEncode model =
+    JE.object
+        [ ( "name", JE.string model.name )
+        , ( "doc", JE.string model.documentation )
+        , ( "elements", JE.list jsonEncodeElement model.elements )
+        , ( "rels", JE.list jsonEncodeRelationship model.relationships )
+        ]
+
+
+jsonEncodeElement : Element -> JE.Value
+jsonEncodeElement el =
+    JE.object
+        [ ( "id", JE.string el.identifier )
+        , ( "type", JE.string el.type_ )
+        , ( "name", JE.string el.name )
+        ]
+
+
+jsonEncodeRelationship : Relationship -> JE.Value
+jsonEncodeRelationship rel =
+    [ ( "id", JE.string rel.identifier )
+    , ( "source", JE.string rel.source )
+    , ( "target", JE.string rel.target )
+    , ( "type", JE.string rel.type_ )
+    ]
+        |> List.append
+            (case rel.name of
+                Nothing ->
+                    []
+
+                Just name ->
+                    [ ( "name", JE.string name ) ]
+            )
+        |> JE.object
