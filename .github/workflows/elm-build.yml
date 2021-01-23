@@ -11,8 +11,23 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Run elm make
+      - name: Set up elm
         uses: jorelali/setup-elm@v2
         with:
           elm-version: 0.19.1
+
       - run: elm make src/Main.elm --output=main.js --optimize
+
+      - run: mkdir deploy
+      - run: cp *.html *.css *.js deploy
+
+      - name: Deploy site
+        uses: kevinpainchaud/simple-ftp-deploy-action@v1.2.1
+        with:
+          ftp_host: ${{ secrets.ftp_server }}
+          ftp_username: ${{ secrets.ftp_user }}
+          ftp_password: ${{ secrets.ftp_pw }}
+          local_source_dir: "./deploy"
+          dist_target_dir: "/heinecke.com/archi"
+          only_newer: true
+          delete: true
