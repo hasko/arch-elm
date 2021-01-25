@@ -20,7 +20,7 @@ main =
 
 
 type alias Model =
-    { archi : Maybe Archi.Model
+    { archi : Archi.Model
     , notice : Maybe String
     }
 
@@ -35,15 +35,15 @@ init : Maybe JD.Value -> ( Model, Cmd Msg )
 init flags =
     case flags of
         Nothing ->
-            ( Model Nothing Nothing, Cmd.none )
+            ( Model Archi.empty Nothing, Cmd.none )
 
         Just jsonValue ->
             case JD.decodeValue Archi.jsonDecoder jsonValue of
                 Ok m ->
-                    ( Model (Just m) (Just "Previous model loaded."), Cmd.none )
+                    ( Model m (Just "Previous model loaded."), Cmd.none )
 
                 Err s ->
-                    ( Model Nothing (Just (JD.errorToString s)), Cmd.none )
+                    ( Model Archi.empty (Just (JD.errorToString s)), Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -62,12 +62,12 @@ update msg model =
         ModelLoaded contents ->
             case Xml.Decode.run Archi.decoder contents of
                 Ok a ->
-                    ( { model | archi = Just a, notice = Nothing }
+                    ( { model | archi = a, notice = Nothing }
                     , saveModel a
                     )
 
                 Err s ->
-                    ( { model | archi = Nothing, notice = Just s }
+                    ( { model | archi = Archi.empty, notice = Just s }
                     , Cmd.none
                     )
 
@@ -86,12 +86,7 @@ view model =
             Just s ->
                 p [ class "notice" ] [ text s ]
         , button [ onClick ModelRequested ] [ text "Load Model" ]
-        , case model.archi of
-            Nothing ->
-                p [] [ text "No model decoded" ]
-
-            Just a ->
-                viewArchimateModel a
+        , viewArchimateModel model.archi
         ]
 
 

@@ -6,6 +6,7 @@ module Archimate exposing
     , Relationship
     , decoder
     , elementById
+    , empty
     , hasAnyExternalElements
     , jsonDecoder
     , jsonEncode
@@ -33,6 +34,11 @@ type alias Element =
 
 type alias Relationship =
     { identifier : String, source : String, target : String, type_ : String, name : Maybe String }
+
+
+empty : Model
+empty =
+    Model "Unnamed Model" "" [] []
 
 
 decoder : Decoder Model
