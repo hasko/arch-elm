@@ -1,6 +1,7 @@
 module Main exposing (..)
 
 import Archimate as Archi exposing (jsonEncode)
+import Archimate.Analysis as Analysis
 import Browser
 import File exposing (File)
 import File.Select as Select
@@ -191,14 +192,8 @@ viewRelationship model r =
 
 observations : Archi.Model -> List (Html Msg)
 observations model =
-    []
-        |> List.append
-            (if Archi.hasAnyExternalElements model Archi.Application then
-                []
-
-             else
-                [ p [] [ text "The model has no external elements on the Application layer." ] ]
-            )
+    Analysis.observations model
+        |> List.map (\o -> p [] [ text o.description ])
 
 
 saveModel : Archi.Model -> Cmd Msg
