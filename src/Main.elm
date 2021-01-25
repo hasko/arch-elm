@@ -5,7 +5,7 @@ import Browser
 import File exposing (File)
 import File.Select as Select
 import Html exposing (Html, button, div, em, h2, h3, p, pre, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, colspan)
 import Html.Entity exposing (nbsp)
 import Html.Events exposing (onClick)
 import Json.Decode as JD
@@ -115,7 +115,13 @@ viewArchimateModel model =
                         , th [ class "lighter" ] [ text "ID" ]
                         ]
                     ]
-                , tbody [] (List.map viewElement (List.sortBy (\e -> e.name) model.elements))
+                , tbody []
+                    (if List.isEmpty model.elements then
+                        [ tr [] [ td [ colspan 3 ] [ text "(none)" ] ] ]
+
+                     else
+                        List.map viewElement (List.sortBy (\e -> e.name) model.elements)
+                    )
                 ]
             ]
         , div []
@@ -130,7 +136,13 @@ viewArchimateModel model =
                         , th [ class "lighter" ] [ text "ID" ]
                         ]
                     ]
-                , tbody [] (List.map (viewRelationship model) model.relationships)
+                , tbody []
+                    (if List.isEmpty model.relationships then
+                        [ tr [] [ td [ colspan 5 ] [ text "(none)" ] ] ]
+
+                     else
+                        List.map (viewRelationship model) model.relationships
+                    )
                 ]
             ]
         ]
