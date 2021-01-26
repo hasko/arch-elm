@@ -46,12 +46,11 @@ empty =
 
 decoder : Decoder Model
 decoder =
-    D.succeed Model
+    D.succeed (\name doc elements rels -> Model name doc elements rels 0)
         |> D.optionalPath [ "name" ] (D.single D.string) "Unnamed Model"
         |> D.optionalPath [ "documentation" ] (D.single D.string) ""
         |> D.requiredPath [ "elements", "element" ] (D.list elementDecoder)
         |> D.requiredPath [ "relationships", "relationship" ] (D.list relationshipDecoder)
-        |> D.optionalPath [ "xyz_next_id" ] (D.single D.int) 0
 
 
 elementDecoder : Decoder Element
