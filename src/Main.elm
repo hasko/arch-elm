@@ -5,12 +5,13 @@ import Archimate.Analysis as Analysis
 import Browser
 import File exposing (File)
 import File.Select as Select
-import Html exposing (Html, button, div, em, h2, h3, p, pre, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, colspan)
+import Html exposing (Html, button, div, em, h2, h3, label, option, p, pre, select, table, tbody, td, text, th, thead, tr)
+import Html.Attributes exposing (class, colspan, disabled, for, id, value)
 import Html.Entity exposing (nbsp)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Json.Decode as JD
 import Json.Encode as JE
+import Maybe.Extra exposing (isNothing)
 import Ports
 import Task
 import Xml.Decode
@@ -23,6 +24,7 @@ main =
 type alias Model =
     { archi : Archi.Model
     , notice : Maybe String
+    , selectedElementType : Maybe String
     }
 
 
@@ -30,21 +32,23 @@ type Msg
     = ModelRequested
     | ModelSelected File
     | ModelLoaded String
+    | SelectElementType String
+    | AddElement
 
 
 init : Maybe JD.Value -> ( Model, Cmd Msg )
 init flags =
     case flags of
         Nothing ->
-            ( Model Archi.empty Nothing, Cmd.none )
+            ( Model Archi.empty Nothing Nothing, Cmd.none )
 
         Just jsonValue ->
             case JD.decodeValue Archi.jsonDecoder jsonValue of
                 Ok m ->
-                    ( Model m (Just "Previous model loaded."), Cmd.none )
+                    ( Model m (Just "Previous model loaded from browser local storage.") Nothing, Cmd.none )
 
                 Err s ->
-                    ( Model Archi.empty (Just (JD.errorToString s)), Cmd.none )
+                    ( Model Archi.empty (Just (JD.errorToString s)) Nothing, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -72,6 +76,29 @@ update msg model =
                     , Cmd.none
                     )
 
+        SelectElementType t ->
+            let
+                sel =
+                    if String.isEmpty t then
+                        Nothing
+
+                    else
+                        Just t
+            in
+            ( { model | selectedElementType = sel }, Cmd.none )
+
+        AddElement ->
+            case model.selectedElementType of
+                Nothing ->
+                    ( { model | notice = Just "Select an element type first" }, Cmd.none )
+
+                Just t ->
+                    let
+                        a =
+                            Archi.addElement "Unnamed Element" t model.archi
+                    in
+                    ( { model | archi = a }, saveModel a )
+
 
 subscriptions _ =
     Sub.none
@@ -87,23 +114,23 @@ view model =
             Just s ->
                 p [ class "notice" ] [ text s ]
         , button [ onClick ModelRequested ] [ text "Load Model" ]
-        , viewArchimateModel model.archi
+        , viewArchimateModel model
         ]
 
 
-viewArchimateModel : Archi.Model -> Html Msg
+viewArchimateModel : Model -> Html Msg
 viewArchimateModel model =
     div []
         [ div []
-            [ h2 [] [ text model.name ]
-            , div [] (h3 [] [ text "Observations" ] :: observations model)
+            [ h2 [] [ text model.archi.name ]
+            , div [] (h3 [] [ text "Observations" ] :: observations model.archi)
             , h3 [] [ text "Documentation" ]
             , p []
-                [ if String.isEmpty model.documentation then
+                [ if String.isEmpty model.archi.documentation then
                     text "(Undocumented)"
 
                   else
-                    text model.documentation
+                    text model.archi.documentation
                 ]
             ]
         , div []
@@ -117,13 +144,21 @@ viewArchimateModel model =
                         ]
                     ]
                 , tbody []
-                    (if List.isEmpty model.elements then
+                    (if List.isEmpty model.archi.elements then
                         [ tr [] [ td [ colspan 3 ] [ text "(none)" ] ] ]
 
                      else
-                        List.map viewElement (List.sortBy (\e -> e.name) model.elements)
+                        List.map viewElement (List.sortBy (\e -> e.name) model.archi.elements)
                     )
                 ]
+            , label [ for "element-type-select" ] [ text "Element type: " ]
+            , select [ id "element-type-select", onInput SelectElementType ]
+                (option [ value "" ] [ text "--Choose a type--" ]
+                    :: List.map
+                        (\t -> option [ value t ] [ text t ])
+                        Archi.elementTypes
+                )
+            , button [ onClick AddElement, disabled (isNothing model.selectedElementType) ] [ text "Add Element" ]
             ]
         , div []
             [ h3 [] [ text "Relationships" ]
@@ -138,11 +173,11 @@ viewArchimateModel model =
                         ]
                     ]
                 , tbody []
-                    (if List.isEmpty model.relationships then
+                    (if List.isEmpty model.archi.relationships then
                         [ tr [] [ td [ colspan 5 ] [ text "(none)" ] ] ]
 
                      else
-                        List.map (viewRelationship model) model.relationships
+                        List.map (viewRelationship model.archi) model.archi.relationships
                     )
                 ]
             ]
@@ -192,8 +227,15 @@ viewRelationship model r =
 
 observations : Archi.Model -> List (Html Msg)
 observations model =
-    Analysis.observations model
-        |> List.map (\o -> p [] [ text o.description ])
+    let
+        obs =
+            Analysis.observations model
+    in
+    if List.isEmpty obs then
+        [ p [] [ text "None. All good." ] ]
+
+    else
+        List.map (\o -> p [] [ text o.description ]) obs
 
 
 saveModel : Archi.Model -> Cmd Msg

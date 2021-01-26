@@ -4,8 +4,10 @@ module Archimate exposing
     , Layer(..)
     , Model
     , Relationship
+    , addElement
     , decoder
     , elementById
+    , elementTypes
     , empty
     , hasAnyExternalElements
     , jsonDecoder
@@ -25,6 +27,7 @@ type alias Model =
     , documentation : String
     , elements : List Element
     , relationships : List Relationship
+    , next_id : Int
     }
 
 
@@ -38,7 +41,7 @@ type alias Relationship =
 
 empty : Model
 empty =
-    Model "Unnamed Model" "" [] []
+    Model "Unnamed Model" "" [] [] 0
 
 
 decoder : Decoder Model
@@ -48,6 +51,7 @@ decoder =
         |> D.optionalPath [ "documentation" ] (D.single D.string) ""
         |> D.requiredPath [ "elements", "element" ] (D.list elementDecoder)
         |> D.requiredPath [ "relationships", "relationship" ] (D.list relationshipDecoder)
+        |> D.optionalPath [ "xyz_next_id" ] (D.single D.int) 0
 
 
 elementDecoder : Decoder Element
@@ -118,6 +122,11 @@ metamodelElements =
         |> Dict.insert "DataObject" { layer = Application, aspect = PassiveStructure, visibility = External }
 
 
+elementTypes : List String
+elementTypes =
+    Dict.keys metamodelElements
+
+
 layer : Element -> Maybe Layer
 layer e =
     metamodelElements |> Dict.get e.type_ |> Maybe.map .layer
@@ -162,6 +171,7 @@ jsonEncode model =
         , ( "doc", JE.string model.documentation )
         , ( "elements", JE.list jsonEncodeElement model.elements )
         , ( "rels", JE.list jsonEncodeRelationship model.relationships )
+        , ( "max_id", JE.int model.next_id )
         ]
 
 
@@ -194,11 +204,22 @@ jsonEncodeRelationship rel =
 
 jsonDecoder : JD.Decoder Model
 jsonDecoder =
-    JD.map4 Model
+    JD.map5 Model
         (JD.field "name" JD.string)
         (JD.field "doc" JD.string)
         (JD.field "elements" (JD.list jsonElementDecoder))
         (JD.field "rels" (JD.list jsonRelationshipDecoder))
+        (JD.maybe (JD.field "max_id" JD.int)
+            |> JD.andThen
+                (\m ->
+                    case m of
+                        Nothing ->
+                            JD.succeed 0
+
+                        Just i ->
+                            JD.succeed i
+                )
+        )
 
 
 jsonElementDecoder : JD.Decoder Element
@@ -217,3 +238,27 @@ jsonRelationshipDecoder =
         (JD.field "target" JD.string)
         (JD.field "type" JD.string)
         (JD.maybe (JD.field "name" JD.string))
+
+
+addElement : String -> String -> Model -> Model
+addElement name type_ model =
+    let
+        new_id =
+            newIdentifier model
+    in
+    { model
+        | elements = Element (String.fromInt (newIdentifier model)) type_ name :: model.elements
+        , next_id = new_id + 1
+    }
+
+
+newIdentifier : Model -> Int
+newIdentifier model =
+    if
+        List.any (\e -> e.identifier == String.fromInt model.next_id) model.elements
+            || List.any (\r -> r.identifier == String.fromInt model.next_id) model.relationships
+    then
+        newIdentifier { model | next_id = model.next_id + 1 }
+
+    else
+        model.next_id
