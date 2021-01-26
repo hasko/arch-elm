@@ -171,7 +171,7 @@ jsonEncode model =
         , ( "doc", JE.string model.documentation )
         , ( "elements", JE.list jsonEncodeElement model.elements )
         , ( "rels", JE.list jsonEncodeRelationship model.relationships )
-        , ( "max_id", JE.int model.next_id )
+        , ( "next_id", JE.int model.next_id )
         ]
 
 
@@ -209,7 +209,7 @@ jsonDecoder =
         (JD.field "doc" JD.string)
         (JD.field "elements" (JD.list jsonElementDecoder))
         (JD.field "rels" (JD.list jsonRelationshipDecoder))
-        (JD.maybe (JD.field "max_id" JD.int)
+        (JD.maybe (JD.field "next_id" JD.int)
             |> JD.andThen
                 (\m ->
                     case m of
